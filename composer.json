@@ -1,0 +1,22 @@
+{
+    "name": "nemesis/laravel-filter-and-sorting",
+    "description": "Filter And Sorting trait",
+    "type": "library",
+    "version": "1.0.0",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Bondarenko Kirill",
+            "email": "bondarenko.kirill@gmail.com"
+        }
+    ],
+    "require": {
+        "laravel/framework": ">=5.1.1",
+        "doctrine/dbal": "^2.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Nemesis\\FilterAndSorting\\": "src/"
+        }
+    }
+}
