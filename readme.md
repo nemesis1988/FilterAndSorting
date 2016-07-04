@@ -27,6 +27,15 @@
     }
 ```
 
+Он подключается как scope к модели, что бы использовать, при запросе к модели нужно его вызвать:
+
+```php
+  public function index(Request $request)
+  {
+      return SomeModel::setFilterAndRelationsAndSort($request)->get()
+  }
+```
+
 #### Использование фильтра
 
 Для фильтрации нужно использовать get параметр filter, в который помещается json с полями для фильтрации и параметрами.
