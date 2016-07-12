@@ -126,8 +126,10 @@ trait FilterAndSorting
 
             $pattern = "/^(\d{2}).(\d{2}).(\d{4})$/";
             if (isset($value['operation']) && in_array(strtolower($value['operation']), $allow_operations) && isset($value['value'])) {
-                if (in_array(strtolower($value['operation']), ['in', 'not in']) && is_array($value['value'])) {
+                if (strtolower($value['operation']) == 'in' && is_array($value['value'])) {
                     $query->whereIn($key, $value['value']);
+                } elseif (strtolower($value['operation']) == 'not in' && is_array($value['value'])) {
+                    $query->whereNotIn($key, $value['value']);
                 } elseif (strtolower($value['operation']) == 'like') {
                     $query->where($key, 'like', "%{$value['value']}%");
                 } else {
