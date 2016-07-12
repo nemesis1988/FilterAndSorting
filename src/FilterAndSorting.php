@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Class FilterAndSorting
  * @package App\Traits
  *
- * @version 1.0.0
+ * @version 1.0.2
  * @author Bondarenko Kirill <bondarenko.kirill@gmail.com>
  */
 trait FilterAndSorting
