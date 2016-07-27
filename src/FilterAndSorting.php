@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Class FilterAndSorting
  * @package App\Traits
  *
- * @version 1.0.4
+ * @version 1.0.5
  * @author Bondarenko Kirill <bondarenko.kirill@gmail.com>
  */
 trait FilterAndSorting
@@ -83,7 +83,7 @@ trait FilterAndSorting
      */
     public function setFilter($query, $params, $request = null)
     {
-        $filter = $this->getFilter($params, $request, 'filterExpand');
+        $filter = $this->getFilter($params, $request);
 
         if ($filter) {
             foreach ($filter as $key => $value) {
