@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Class FilterAndSorting
  * @package App\Traits
  *
- * @version 1.0.2
+ * @version 1.0.3
  * @author Bondarenko Kirill <bondarenko.kirill@gmail.com>
  */
 trait FilterAndSorting
@@ -39,9 +39,36 @@ trait FilterAndSorting
     {
         $query = $this->setFilter($query, $params, $request);
         $this->setExpands($query, $request);
+        $this->setFilterExpand($query, $params, $request);
         $query = $this->setSort($query, $request);
 
         return $query;
+    }
+
+    /**
+     * Фильтр данных во вложенных моделях
+     *
+     * @param $query
+     * @param $params
+     * @param null $request
+     * @since 1.0.3
+     */
+    public function setFilterExpand($query, $params, $request = null)
+    {
+        $filter = $this->getFilter($params, $request, 'filterExpand');
+        if ($filter) {
+            foreach ($filter as $key => $value) {
+                $keys_array = explode('.', $key);
+                $relation = null;
+                if (count($keys_array) == 2 && in_array($keys_array[0], $this->extraFields())) {
+                    $relation = $keys_array[0];
+                    $field_name = $keys_array[1];
+                    $query->with([$relation => function($q) use ($field_name, $value) {
+                        $this->addFilterCondition($q, $field_name, $value);
+                    }]);
+                }
+            }
+        }
     }
 
     /**
@@ -56,15 +83,7 @@ trait FilterAndSorting
      */
     public function setFilter($query, $params, $request = null)
     {
-        $filter = [];
-
-        if (isset($params['filter']) && is_array($params['filter'])) {
-            $filter = $params['filter'];
-        }
-
-        if ($request->input('filter')) {
-            $filter = array_merge($filter, json_decode($request->input('filter'), true));
-        }
+        $filter = $this->getFilter($params, $request, 'filterExpand');
 
         if ($filter) {
             foreach ($filter as $key => $value) {
@@ -282,5 +301,29 @@ trait FilterAndSorting
         $query->addSelect(new Expression("`$table`.`$sortColumn`"));
 
         return $query->join($table, $one, $operator, $two, $type, $where);
+    }
+
+    /**
+     * Получить параметры фильтра
+     *
+     * @param $params
+     * @param $request
+     * @param string $filterField
+     * @return array
+     * @since 1.0.3
+     */
+    public function getFilter($params, $request, $filterField = 'filter')
+    {
+        $filter = [];
+
+        if (isset($params[$filterField]) && is_array($params[$filterField])) {
+            $filter = $params[$filterField];
+        }
+
+        if ($request->input($filterField)) {
+            $filter = array_merge($filter, json_decode($request->input($filterField), true));
+        }
+
+        return $filter;
     }
 }
