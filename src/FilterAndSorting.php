@@ -101,15 +101,16 @@ trait FilterAndSorting
      */
     protected function checkCrossTableRelation($query, $relation, $operator, $type, $where)
     {
-        $one = $relation->getQualifiedParentKeyName();
-        $two = $relation->getForeignKey();
+        $table = $relation->getRelated()->getTable();
+        $one = $this->getTable() . '.' . $relation->getForeignKey();
+        $two = $table . '.' . $relation->getOtherKey();
         if (method_exists($relation, 'getTable')) {
             $three = $relation->getQualifiedParentKeyName();
             $four = $relation->getForeignKey();
 
             $query->join($relation->getTable(), $three, $operator, $four, $type, $where);
 
-            $one = $relation->getRelated()->getTable() . '.' . $relation->getRelated()->primaryKey;
+            $one = $table . '.' . $relation->getRelated()->primaryKey;
             $two = $relation->getOtherKey();
         }
         return [$one, $two];
