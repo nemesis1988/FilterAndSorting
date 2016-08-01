@@ -6,7 +6,7 @@
  * Time: 22:22
  */
 
-namespace App\Traits;
+namespace Nemesis\FilterAndSorting\Library;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

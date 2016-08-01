@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Traits;
+namespace Nemesis\FilterAndSorting\Library\Actions;
 
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
 
 /**
  * Class Sort

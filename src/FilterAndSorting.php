@@ -1,10 +1,13 @@
 <?php
-namespace App\Traits;
+namespace Nemesis\FilterAndSorting;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Expression;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
+use Nemesis\FilterAndSorting\Library\Actions\Sort;
+use Nemesis\FilterAndSorting\Library\Actions\Expand;
+use Nemesis\FilterAndSorting\Library\Actions\Filter;
 
 /**
  * Class FilterAndSorting
