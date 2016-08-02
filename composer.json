@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "laravel/framework": ">=5.1.*",
+        "laravel/framework": ">=5.1.0",
         "doctrine/dbal": "^2.5"
     },
     "autoload": {
