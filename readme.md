@@ -1,4 +1,25 @@
 ## Filter And Sorting Trait
+Для установки наберите в командной строке код:
+
+Для Laravel >=5.1.1:
+```php
+composer require nemesis/laravel-filter-and-sorting ^2.0
+```
+Для Laravel >=5.3:
+```php
+composer require nemesis/laravel-filter-and-sorting ^3.0
+```
+
+или добавьте в **composer.json** запись в раздел **require**:
+
+Для Laravel >=5.1.1:
+```php
+"nemesis/laravel-filter-and-sorting": "^2.0"
+```
+Для Laravel >=5.3
+```php
+"nemesis/laravel-filter-and-sorting": "^3.0"
+```
 
 ## Подключение
 
