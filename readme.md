@@ -15,10 +15,12 @@
 <pop:entries from="ru">
   <pop:lang:ru field="body"/>
   фыв
+  </pop:lang:ru>
 </pop:entries>
 <pop:entries from="en">
   <pop:lang:en field="body"/>
   asd
+  </pop:lang:en>
 </pop:entries>
 
 ## Filter And Sorting Trait
