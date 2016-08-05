@@ -1,28 +1,3 @@
-<div> 
-  <h3>
-  <pop:lang:ru default="idiomas">Языки</pop:lang:ru>
-  <pop:lang:en>Languages</pop:lang:en>
-  </h3> 
-  <ul> 
-    <li> 
-      <a href="<pop:lang:link lang='en'/>" class="<pop:lang:en>active</pop:lang:en>">English</a> 
-    </li> 
-    <li> 
-      <a href="<pop:lang:link lang='ru'/>" class="<pop:lang:ru>active</pop:lang:ru>">Русский</a> 
-    </li> 
-  </ul> 
-</div> 
-<pop:entries from="ru">
-  <pop:lang:ru field="body"/>
-  фыв
-  </pop:lang:ru>
-</pop:entries>
-<pop:entries from="en">
-  <pop:lang:en field="body"/>
-  asd
-  </pop:lang:en>
-</pop:entries>
-
 ## Filter And Sorting Trait
 Для установки наберите в командной строке код:
 
