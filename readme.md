@@ -1,23 +1,46 @@
+<div> 
+  <h3>
+  <pop:lang:ru default="idiomas">Языки</pop:lang:ru>
+  <pop:lang:en>Languages</pop:lang:en>
+  </h3> 
+  <ul> 
+    <li> 
+      <a href="<pop:lang:link lang='en'/>" class="<pop:lang:en>active</pop:lang:en>">English</a> 
+    </li> 
+    <li> 
+      <a href="<pop:lang:link lang='ru'/>" class="<pop:lang:ru>active</pop:lang:ru>">Русский</a> 
+    </li> 
+  </ul> 
+</div> 
+<pop:entries from="ru">
+  <pop:lang:ru field="body"/>
+  фыв
+</pop:entries>
+<pop:entries from="en">
+  <pop:lang:en field="body"/>
+  asd
+</pop:entries>
+
 ## Filter And Sorting Trait
 Для установки наберите в командной строке код:
 
 Для Laravel >=5.1.1:
-```php
+```bash
 composer require nemesis/laravel-filter-and-sorting ^2.0
 ```
 Для Laravel >=5.3:
-```php
+```bash
 composer require nemesis/laravel-filter-and-sorting ^3.0
 ```
 
 или добавьте в **composer.json** запись в раздел **require**:
 
 Для Laravel >=5.1.1:
-```php
+```json
 "nemesis/laravel-filter-and-sorting": "^2.0"
 ```
 Для Laravel >=5.3
-```php
+```json
 "nemesis/laravel-filter-and-sorting": "^3.0"
 ```
 
