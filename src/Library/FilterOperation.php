@@ -8,7 +8,6 @@
 
 namespace Nemesis\FilterAndSorting\Library;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -145,7 +144,7 @@ class FilterOperation
                 }
                 break;
             default:
-                $query->where($this->field_name, $this->operation, DB::raw($this->getDateValue($this->value)));
+                $query->where($this->field_name, $this->operation, $this->getDateValue($this->value));
 
         }
     }
@@ -190,7 +189,7 @@ class FilterOperation
     private function detectOperation($condition)
     {
         if (isset($condition['operation'])) {
-            if (in_array($condition['operation'], $this->allowedOperations)) {
+            if (in_array($condition['operation'], $this->allowedOperations) !== false) {
                 $this->operationType = 'operation';
                 $this->operation = strtolower($condition['operation']);
                 if ($this->relation && $this->operation == '<>') {

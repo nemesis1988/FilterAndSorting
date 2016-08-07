@@ -126,8 +126,8 @@ class Filter extends FilterAndSortingFacade
     private function setSortModelForRelationExpand(Sort $sortInstance, Collection $sort, &$query)
     {
         $sortInstance->startTransition($query);
-        $sort->each(function ($condition, $field) use ($sortInstance) {
-            $sortInstance->sortModel($field, $condition->direction);
+        $sort->each(function ($condition) use ($sortInstance) {
+            $sortInstance->sortModel($condition);
         });
         $sortInstance->stopTransition();
     }

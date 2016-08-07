@@ -51,11 +51,11 @@ class Sort extends FilterAndSortingFacade
      */
     public function set()
     {
-        $this->sortConditions->each(function ($condition, $field) {
+        $this->sortConditions->each(function ($condition) {
             if ($condition->relation) {
-                $this->sortRelation($condition, $field);
+                $this->sortRelation($condition);
             } else {
-                $this->sortModel($field, $condition->direction);
+                $this->sortModel($condition);
             }
         });
         return $this->query;
@@ -70,11 +70,11 @@ class Sort extends FilterAndSortingFacade
      */
     public function setAsRelation(Collection $sorted)
     {
-        $this->sortConditions->each(function ($condition, $field) use ($sorted) {
+        $this->sortConditions->each(function ($condition) use ($sorted) {
             if ($condition->relation && !$sorted->contains('relation', $condition->relation)) {
-                $this->query->with([$condition->relation => function ($q) use ($field, $condition) {
+                $this->query->with([$condition->relation => function ($q) use ($condition) {
                     $this->startTransition($q);
-                    $this->sortModel($field, $condition->direction);
+                    $this->sortModel($condition);
                     $this->stopTransition();
                 }]);
             }
@@ -87,27 +87,25 @@ class Sort extends FilterAndSortingFacade
      * Сортиировка по полю внутри реляции.
      *
      * @param $condition
-     * @param $fieldName
      * @since 2.0.0
      */
-    public function sortRelation($condition, $fieldName)
+    public function sortRelation($condition)
     {
-        $this->query->modelJoin($condition->relation, $fieldName);
+        $this->query->modelJoin($condition->relation, $condition->field);
         $table_name = $this->detectTableNameFromRelation($condition->relation);
-        $this->query->orderBy($table_name . '.' . $fieldName, $condition->direction);
+        $this->query->orderBy($table_name . '.' . $condition->field, $condition->direction);
     }
 
     /**
      * Соритровка по полю внутри модели.
      *
-     * @param $field
-     * @param $sortDirection
+     * @param $condition
      * @since 2.0.0
      */
-    public function sortModel($field, $sortDirection)
+    public function sortModel($condition)
     {
-        if (in_array($field, $this->getModelAvailableFields($this->model))) {
-            $this->query->orderBy($field, $sortDirection);
+        if (in_array($condition->field, $this->getModelAvailableFields($this->model))) {
+            $this->query->orderBy($condition->field, $condition->direction);
         }
     }
 
@@ -149,7 +147,8 @@ class Sort extends FilterAndSortingFacade
 
         $field_name = isset($part_arguments[1]) ? $part_arguments[1] : $part_arguments[0];
 
-        $this->sortConditions->put($field_name, (object)[
+        $this->sortConditions->push((object)[
+            'field' => $field_name,
             'direction' => $sort_direction,
             'relation' => isset($part_arguments[1]) && $this->checkRelation($part_arguments[0]) ? $part_arguments[0] : null
         ]);
