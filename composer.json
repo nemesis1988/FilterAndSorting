@@ -2,7 +2,7 @@
     "name": "nemesis/laravel-filter-and-sorting",
     "description": "Filter And Sorting trait",
     "type": "library",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "minimum-stability": "dev",
     "authors": [
         {
@@ -22,5 +22,11 @@
         "psr-4": {
             "Nemesis\\FilterAndSorting\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "classmap": ["tests/TestCase.php"]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.5"
     }
 }

@@ -2,7 +2,7 @@
 namespace Nemesis\FilterAndSorting;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Nemesis\FilterAndSorting\Library\Actions\Sort;
