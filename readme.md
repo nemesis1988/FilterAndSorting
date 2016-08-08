@@ -2,11 +2,11 @@
 Для установки наберите в командной строке код:
 
 Для Laravel >=5.1.1:
-```php
+```bash
 composer require nemesis/laravel-filter-and-sorting ^2.0
 ```
 Для Laravel >=5.3:
-```php
+```bash
 composer require nemesis/laravel-filter-and-sorting ^3.0
 ```
 
