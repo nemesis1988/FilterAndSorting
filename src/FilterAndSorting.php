@@ -14,7 +14,8 @@ use Nemesis\FilterAndSorting\Library\Actions\Filter;
  * @package App\Traits
  *
  * @version 2.0.0
- * @author Bondarenko Kirill <bondarenko.kirill@gmail.com> AND Sereda Oleg <zaxodu11@gmail.com>
+ * @author Bondarenko Kirill <bondarenko.kirill@gmail.com>
+ * @author Sereda Oleg <zaxodu11@gmail.com>
  */
 trait FilterAndSorting
 {
