@@ -37,12 +37,6 @@ class Filter extends FilterAndSortingFacade
      */
     private $filterRequestField;
 
-    /**
-     * Параметры фильрации по умолчанию.
-     *
-     * @var array
-     */
-    private $params;
 
     /**
      * Конструсктор класс сортировок.
@@ -57,8 +51,7 @@ class Filter extends FilterAndSortingFacade
         parent::__construct($query, $query->getModel(), $request);
         $this->filterConditions = collect([]);
         $this->filterRequestField = $filterRequestField;
-        $this->params = $params;
-        $this->get();
+        $this->get($params);
     }
 
     /**
@@ -160,8 +153,10 @@ class Filter extends FilterAndSortingFacade
      * Получить условия фильтра.
      *
      * @since 2.0.0
+     *
+     * @param $params
      */
-    public function get()
+    public function get($params)
     {
         if (isset($params[$this->filterRequestField]) && is_array($params[$this->filterRequestField])) {
             $this->filterConditions = collect($params[$this->filterRequestField]);
