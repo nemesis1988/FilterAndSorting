@@ -36,7 +36,7 @@ trait FilterAndSorting
      */
     public static function bootFilterAndSorting()
     {
-        if (mb_strtolower(DB::getName()) == 'mysql') {
+        if (mb_strtolower(\DB::getName()) == 'mysql') {
             DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
         }
     }
