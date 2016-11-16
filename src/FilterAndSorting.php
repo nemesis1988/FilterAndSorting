@@ -36,7 +36,9 @@ trait FilterAndSorting
      */
     public static function bootFilterAndSorting()
     {
-        DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+        if (mb_strtolower(DB::getName()) == 'mysql') {
+            DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+        }
     }
 
     /**
