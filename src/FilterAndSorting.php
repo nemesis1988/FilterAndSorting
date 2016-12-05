@@ -2,7 +2,6 @@
 namespace Nemesis\FilterAndSorting;
 
 use Illuminate\Http\Request;
-use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Nemesis\FilterAndSorting\Library\Actions\Sort;
@@ -36,9 +35,7 @@ trait FilterAndSorting
      */
     public static function bootFilterAndSorting()
     {
-        if (mb_strtolower(\DB::getName()) == 'mysql') {
-            DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
-        }
+        \DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
     }
 
     /**
