@@ -33,13 +33,14 @@ class Expand extends FilterAndSortingFacade
      *
      * @param Builder $query
      * @param Request $request
-     * @param string $expandRequestField
+     * @param array   $params
+     * @param string  $expandRequestField
      */
-    public function __construct(Builder &$query, Request $request = null, $expandRequestField = 'sort'){
+    public function __construct(Builder &$query, Request $request = null, $params = [], $expandRequestField = 'sort'){
         parent::__construct($query, $query->getModel(), $request);
         $this->expands = collect([]);
         $this->expandRequestField = $expandRequestField;
-        $this->get();
+        $this->get($params);
     }
 
     /**
@@ -60,13 +61,19 @@ class Expand extends FilterAndSortingFacade
     /**
      * Получить список связей из expand.
      *
+     * @param array $params
+     *
      * @return array
      * @since 1.0.0
      */
-    protected function get()
+    protected function get($params = [ ])
     {
+        if(isset($params['expand'])){
+            $this->expands = collect(array_intersect($this->model->extraFields(), explode(',', $params['expand'])));
+        }
+
         if ($this->request && $this->request->has('expand')) {
-            $this->expands = collect(array_intersect($this->model->extraFields(), explode(',', $this->request->get('expand'))));
+            $this->expands = $this->expands->merge(array_intersect($this->model->extraFields(), explode(',', $this->request->get('expand'))));
         }
     }
 }

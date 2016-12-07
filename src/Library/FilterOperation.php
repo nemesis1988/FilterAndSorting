@@ -57,7 +57,7 @@ class FilterOperation
      *
      * @var array
      */
-    private $allowedOperations = ['=', '>', '<', '>=', '<=', '<>', 'not in', 'in', 'like'];
+    private $allowedOperations = ['=', '>', '<', '>=', '<=', '<>', 'not in', 'in', 'like', 'search'];
     private $allowedDateOperations = ['=', '>', '<', '>=', '<=', '<>'];
 
     /** @var regex Шаблон определения даты для фильтрации */
@@ -90,9 +90,16 @@ class FilterOperation
                     $this->addFilterOperation($qu);
                 });
             } else {
-                $this->query->whereHas($this->relation, function ($qu) {
-                    $this->addFilterOperation($qu);
-                });
+                if($this->operation == 'search'){
+                    $this->query->orWhereHas($this->relation, function ($qu) {
+                        $this->operation = 'like';
+                        $this->addFilterOperation($qu);
+                    });
+                }else {
+                    $this->query->whereHas($this->relation, function ($qu) {
+                        $this->addFilterOperation($qu);
+                    });
+                }
             }
         } else {
             $this->addFilterOperation($this->query);
@@ -113,7 +120,7 @@ class FilterOperation
             $this->filterAllowedOperations($query);
         } elseif ($this->operationType == 'date_range') {
             $this->filterByDateRange($query);
-        } elseif (is_string($this->value)) {
+        } elseif (is_string($this->value) || is_numeric($this->value)) {
             $query->where($this->field_name, $this->value);
         }
         return $query;
@@ -141,6 +148,11 @@ class FilterOperation
             case 'like':
                 if (is_string($this->value)) {
                     $query->where($this->field_name, 'like', "%{$this->value}%");
+                }
+                break;
+            case 'search':
+                if (is_string($this->value)) {
+                    $query->orWhere($this->field_name, 'like', "%{$this->value}%");
                 }
                 break;
             default:
@@ -189,9 +201,10 @@ class FilterOperation
     private function detectOperation($condition)
     {
         if (isset($condition['operation'])) {
-            if (in_array($condition['operation'], $this->allowedOperations) !== false) {
+            $operation = strtolower($condition['operation']);
+            if (in_array($operation, $this->allowedOperations) !== false) {
                 $this->operationType = 'operation';
-                $this->operation = strtolower($condition['operation']);
+                $this->operation = $operation;
                 if ($this->relation && $this->operation == '<>') {
                     $this->operation = '=';
                     $this->operationCorrection = true;

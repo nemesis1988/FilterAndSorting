@@ -8,10 +8,10 @@
 
 namespace Nemesis\FilterAndSorting\Library;
 
-use Illuminate\Http\Request;
 use Illuminate\Database\Capsule\Manager as DB;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 /**
  * Class FilterAndSortingFacade
@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class FilterAndSortingFacade
 {
+
     /**
      * @var Builder
      */
@@ -43,8 +44,8 @@ class FilterAndSortingFacade
      * @var array
      */
     private $transition = [
-        'query' => null,
-        'request' => null
+        'query'   => null,
+        'request' => null,
     ];
 
     /**
@@ -52,7 +53,7 @@ class FilterAndSortingFacade
      *
      * @param Builder $query
      * @param Request $request
-     * @param Model $model
+     * @param Model   $model
      */
     public function __construct(Builder $query, Model $model, Request $request = null)
     {
@@ -65,38 +66,112 @@ class FilterAndSortingFacade
     /**
      * Возвращает доступные в модели ключи.
      *
-     * @param Model $model
+     * @param mixed $model
+     *
      * @return array
      * @since 2.0.0
      */
-    public function getModelAvailableFields(Model $model)
+    public function getModelAvailableFields($model)
     {
+        $tableName = $model;
+        if ($model instanceof Model) {
+            $tableName = $model->getTable();
+        }
+
         return array_keys(DB::getDoctrineSchemaManager()
-            ->listTableColumns($model->getTable()));
+            ->listTableColumns($tableName));
     }
 
     /**
      * Определение имени таблицы по имени реляции
      *
-     * @param string $relation
+     * @param string $relationString
+     *
      * @return string
      * @since 2.0.0
      */
-    protected function detectTableNameFromRelation($relation)
+    public function detectTableNameFromRelation($relationString)
     {
-        return $this->model->$relation()->getRelated()->getTable();
+        $keys = explode('.', $relationString);
+        $relatedModel = $this->model;
+        foreach ($keys as $relation) {
+            if (method_exists($relatedModel, $relation)) {
+                $relatedModel = $relatedModel->$relation()->getRelated();
+            }
+        }
+
+        return $relatedModel->getTable();
     }
 
     /**
      * Проверяет наличие реляции.
      *
-     * @param $relation
+     * @param $keys
+     *
      * @return bool
      * @since 2.0.0
      */
-    protected function checkRelation($relation)
+    public function checkRelation(array $keys)
     {
-        return in_array($relation, $this->model->extraFields());
+        $detectRelation = null;
+        $i = 0;
+        $relation = $keys[ $i ];
+        do {
+            if (in_array($relation, $this->model->extraFields())) {
+                $detectRelation = $relation;
+            } elseif ($i != count($keys) - 1) {//this is not last iteration.
+                return null;
+            }
+            $i++;
+            if ( ! empty($keys[ $i ])) {
+                $relation .= ".$keys[$i]";
+            }
+        } while ($i < count($keys));
+
+        return $detectRelation;
+    }
+
+    /**
+     * Возвращает параметры для фильтруемого поля.
+     *
+     * @param      $filterField
+     *
+     * @param bool $checkExists
+     *
+     * @return array
+     * @since 1.0.0
+     */
+    public function getFieldParameters($filterField, $checkExists = false)
+    {
+        $keys_array = explode('.', $filterField);
+        $relation = $this->checkRelation($keys_array);
+        if (count($keys_array) >= 2 && $relation) {
+            $field_name = last($keys_array);
+            $table_name = $this->detectTableNameFromRelation($relation);
+        } else {
+            $field_name = $filterField;
+            $table_name = $this->model->getTable();
+        }
+
+        if ($checkExists && ! in_array($field_name, $this->getModelAvailableFields($table_name))) {
+            $field_name = null;
+            $table_name = null;
+        }
+
+        return [ $relation, $table_name, $field_name ];
+    }
+
+    /**
+     * Возвращает параметры для фильтруемого поля c проверкой наличия его в таблице назанчения.
+     *
+     * @param      $filterField
+     *
+     * @return array
+     * @since 2.1.0
+     */
+    public function getFieldParametersWithExistsCheck($filterField)
+    {
+        return $this->getFieldParameters($filterField, true);
     }
 
     /**
@@ -104,6 +179,7 @@ class FilterAndSortingFacade
      *
      * @param  $query
      * @param  $request
+     *
      * @since 2.0.0
      */
     public function startTransition($query = false, $request = false)

@@ -1,4 +1,4 @@
-## Filter And Sorting Trait
+## Filter And Sorting Trait. Версия кода для Laravel 5.3+
 Для установки наберите в командной строке код:
 
 Для Laravel >=5.1.1:
@@ -18,7 +18,7 @@ composer require nemesis/laravel-filter-and-sorting ^3.0
 ```
 Для Laravel >=5.3
 ```json
-"nemesis/laravel-filter-and-sorting": "^3.0"
+"nemesis/laravel-filter-and-sorting": "^3.1"
 ```
 
 ## Подключение
@@ -138,5 +138,23 @@ composer require nemesis/laravel-filter-and-sorting ^3.0
         "id": 1,
         "name": "Some username"
     }
+  }
+```
+
+### Поиск по модели и ее реляциям
+
+Для осуществления поиска по модели и ее реляциям необходимо при запросе добавить get параметр search.
+При необходимости можно добавить экспанды.
+
+###Пример запроса:
+```php
+  /message?search={"query":"some","fields":"relation1.field|table_field|relation2.field"}
+```
+###Пример ответа:
+```json
+  {
+    "id": 1,
+    "message": "some message",
+    "user_id": 1
   }
 ```

@@ -13,15 +13,24 @@ class FilterExpandTest extends TestCase
         ]);
 
         $user = User::setFilterAndRelationsAndSort($request)->first();
-        
+
         $this->assertNotEquals(
             null,
             $user
         );
 
         $this->assertEquals(
-            'Second post',
-            $user->posts->first()->title
+            'Jefrey Test',
+            $user->full_name
+        );
+
+        $this->assertEquals(
+            2,
+            $user->id
+        );
+
+        $this->assertEmpty(
+            $user->posts
         );
 
         $this->assertEquals(

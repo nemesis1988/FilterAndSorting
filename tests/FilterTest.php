@@ -254,4 +254,30 @@ class FilterTest extends TestCase
             $posts->first()->id
         );
     }
+
+    /** @test **/
+    function is_relations_filter_works_as_expected()
+    {
+        $request = $this->setRequest([
+            'filter' => '{"owner.posts.title":{"operation":"in","value":["Second post","Third post"]}}'
+        ]);
+
+        $posts = Post::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(
+            3,
+            $posts->count()
+        );
+
+        $request = $this->setRequest([
+            'filter' => '{"owner.posts.title":{"operation":"like","value":"thir"}}'
+        ]);
+
+        $posts = Post::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(
+            1,
+            $posts->count()
+        );
+    }
 }

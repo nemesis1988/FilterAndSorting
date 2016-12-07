@@ -6,6 +6,7 @@ namespace Nemesis\FilterAndSorting\Library\Actions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
 
 /**
@@ -33,15 +34,17 @@ class Sort extends FilterAndSortingFacade
      *
      * @param Builder $query
      * @param Request $request
-     * @param string $sortRequestField
+     * @param array   $params
+     * @param string  $sortRequestField
+     *
      * @since 2.0.0
      */
-    public function __construct(Builder &$query, Request $request = null, $sortRequestField = 'sort')
+    public function __construct(Builder &$query, Request $request = null, $params = [], $sortRequestField = 'sort')
     {
         parent::__construct($query, $query->getModel(), $request);
         $this->sortConditions = collect([]);
         $this->sortRequestField = $sortRequestField;
-        $this->get();
+        $this->get($params);
     }
 
     /**
@@ -92,8 +95,7 @@ class Sort extends FilterAndSortingFacade
     public function sortRelation($condition)
     {
         $this->query->modelJoin($condition->relation, $condition->field);
-        $table_name = $this->detectTableNameFromRelation($condition->relation);
-        $this->query->orderBy($table_name . '.' . $condition->field, $condition->direction);
+        $this->sortModel($condition);
     }
 
     /**
@@ -104,20 +106,19 @@ class Sort extends FilterAndSortingFacade
      */
     public function sortModel($condition)
     {
-        if (in_array($condition->field, $this->getModelAvailableFields($this->model))) {
-            $this->query->orderBy($condition->field, $condition->direction);
-        }
+        $this->query->orderBy($this->getConditionFullPath($condition), $condition->direction);
     }
 
     /**
      * Возвращает условия сортировки.
      *
+     * @param array $params
+     *
      * @return array
      * @since 2.0.0
      */
-    public function get()
+    public function get($params = [])
     {
-        $sort = [];
         if ($this->request && $this->request->has($this->sortRequestField)) {
             $sortParts = explode(',', $this->request->get($this->sortRequestField));
             foreach ($sortParts as $part) {
@@ -125,7 +126,12 @@ class Sort extends FilterAndSortingFacade
             }
         }
 
-        return $sort;
+        if(isset($params[$this->sortRequestField])) {
+            $sortParts = explode(',', $params[$this->sortRequestField]);
+            foreach ($sortParts as $part) {
+                $this->setSortPartConditions($part);
+            }
+        }
     }
 
     /**
@@ -143,15 +149,29 @@ class Sort extends FilterAndSortingFacade
             $sort_direction = 'desc';
         }
 
-        $part_arguments = explode('.', trim($part, '-'));
+        list($relation, $table_name, $field_name) = $this->getFieldParametersWithExistsCheck(trim($part, '-'));
 
-        $field_name = isset($part_arguments[1]) ? $part_arguments[1] : $part_arguments[0];
+        if($table_name && $field_name) {
+            $this->sortConditions->push((object) [
+                'field'     => $field_name,
+                'direction' => $sort_direction,
+                'relation'  => $relation,
+                'table' => $table_name
+            ]);
+        }
+    }
 
-        $this->sortConditions->push((object)[
-            'field' => $field_name,
-            'direction' => $sort_direction,
-            'relation' => isset($part_arguments[1]) && $this->checkRelation($part_arguments[0]) ? $part_arguments[0] : null
-        ]);
+    /**
+     * Возвращает полную ссылку на поле сортировки.
+     *
+     * @param $condition
+     *
+     * @return string
+     * @since 2.1.0
+     */
+    protected function getConditionFullPath($condition)
+    {
+        return $condition->table . '.' . $condition->field;
     }
 
 }

@@ -26,6 +26,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
         $database->addConnection(['driver' => 'sqlite', 'database' => ':memory:']);
         $database->bootEloquent();
         $database->setAsGlobal();
+        DB::connection()->enableQueryLog();
     }
 
     /**
@@ -43,6 +44,14 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
             $table->increments('id');
             $table->integer('user_id')->unsigned()->index();
             $table->string('title');
+            $table->nullableTimestamps();
+        });
+
+        DB::schema()->create('comments', function (\Illuminate\Database\Schema\Blueprint $table) {
+            $table->increments('id');
+            $table->integer('user_id')->unsigned()->index();
+            $table->integer('post_id')->unsigned()->index();
+            $table->string('text');
             $table->nullableTimestamps();
         });
 
@@ -81,6 +90,19 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
             [
                 'user_id' => 3,
                 'title' => 'Third post'
+            ],
+        ]);
+
+        DB::table('comments')->insert([
+            [
+                'user_id' => 1,
+                'post_id' => 2,
+                'text' => 'Good post test'
+            ],
+            [
+                'user_id' => 2,
+                'post_id' => 3,
+                'text' => 'Bad post tost'
             ],
         ]);
 
@@ -162,7 +184,7 @@ class Post extends \Illuminate\Database\Eloquent\Model
 
     public function owner()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function viewers()
@@ -172,6 +194,26 @@ class Post extends \Illuminate\Database\Eloquent\Model
 
     public function extraFields()
     {
-        return ['owner','viewers'];
+        return ['owner','viewers', 'owner.posts'];
+    }
+}
+
+class Comment extends \Illuminate\Database\Eloquent\Model
+{
+    use \Nemesis\FilterAndSorting\FilterAndSorting;
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function post()
+    {
+        return $this->belongsTo(Post::class);
+    }
+
+    public function extraFields()
+    {
+        return ['owner','post', 'post.owner'];
     }
 }

@@ -19,13 +19,13 @@ class SortExpandTest extends TestCase
         );
 
         $this->assertEquals(
-            'Second post',
-            $user->posts->first()->title
+            'Third post',
+            $user->viewed->first()->title
         );
 
         $this->assertEquals(
-            'Third post',
-            $user->viewed->first()->title
+            'First post',
+            $user->viewed->last()->title
         );
     }
 }

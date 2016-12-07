@@ -59,7 +59,7 @@ class Filter extends FilterAndSortingFacade
     public function set()
     {
         $this->filterConditions->each(function ($value, $key) {
-            list($relation, $table_name, $field_name) = $this->getFilterFieldParameters($key);
+            list($relation, $table_name, $field_name) = $this->getFieldParameters($key);
             (new FilterOperation($this->query, $this->getFullFieldLink($table_name, $field_name), $value, $relation))->set();
         });
     }
@@ -75,7 +75,7 @@ class Filter extends FilterAndSortingFacade
         $sorted = collect([]);
         $sortInstance = new Sort($this->query, $this->request, $sortRequestField);
         $this->filterConditions->each(function ($value, $key) use (&$sorted, $sortInstance) {
-            list($relation, $table_name, $field_name) = $this->getFilterFieldParameters($key);
+            list($relation, $table_name, $field_name) = $this->getFieldParameters($key);
             if ($relation) {
                 $sort = $this->checkSortRelation($sortInstance, $relation);
                 if ($sort) {
@@ -126,29 +126,6 @@ class Filter extends FilterAndSortingFacade
 
 
     /**
-     * Возвращает параметры для фильтруемого поля.
-     *
-     * @param $filterField
-     * @return array
-     * @since 1.0.0
-     */
-    protected function getFilterFieldParameters($filterField)
-    {
-        $keys_array = explode('.', $filterField);
-        $relation = null;
-        if (count($keys_array) == 2 && $this->checkRelation($keys_array[0])) {
-            $relation = $keys_array[0];
-            $table_name = $this->detectTableNameFromRelation($relation);
-            $field_name = $keys_array[1];
-        } else {
-            $field_name = $keys_array[0];
-            $table_name = $this->model->getTable();
-        }
-        return [$relation, $table_name, $field_name];
-    }
-
-
-    /**
      * Получить условия фильтра.
      *
      * @since 2.0.0
@@ -157,13 +134,43 @@ class Filter extends FilterAndSortingFacade
      */
     public function get($params)
     {
-        if (isset($params[$this->filterRequestField]) && is_array($params[$this->filterRequestField])) {
-            $this->filterConditions = collect($params[$this->filterRequestField]);
+        if (isset($params[ $this->filterRequestField ]) && is_array($params[ $this->filterRequestField ])) {
+            $this->filterConditions = collect($params[ $this->filterRequestField ]);
         }
 
         if ($this->request && $this->request->has($this->filterRequestField)) {
-            $this->filterConditions = $this->filterConditions->merge(json_decode($this->request->input($this->filterRequestField), true));
+            $this->filterConditions = $this->filterConditions->merge(
+                $this->mergeConditions($this->request->input($this->filterRequestField))
+            );
         }
+    }
+
+    /**
+     * Сливайет вместе параметры.
+     * Только данные "whereIn" операций не затираются.
+     *
+     * @param $requestConditions
+     *
+     * @return mixed
+     */
+    public function mergeConditions($requestConditions)
+    {
+        $conditions = json_decode($requestConditions, true);
+        if(is_array($conditions)) {
+            foreach ($conditions as $key => $row) {
+                //merge operation in conditions.
+                if ($this->filterConditions->has($key) &&
+                    isset($this->filterConditions[ $key ]['operation']) && $this->filterConditions[ $key ]['operation'] == 'in' && is_array($this->filterConditions[ $key ]['value']) &&
+                    isset($row['operation']) && $row['operation'] == 'in' && is_array($row['value'])
+                ) {
+                    $conditions[ $key ]['value'] = array_merge($conditions[ $key ]['value'], $this->filterConditions[ $key ]['value']);
+                }
+            }
+
+            return $conditions;
+        }
+
+        return [];
     }
 
     /**
