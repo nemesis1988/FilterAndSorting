@@ -56,6 +56,7 @@ class Filter extends FilterAndSortingFacade
 
     /**
      * Устанавливаем параметры фильтрации.
+     * @since 2.0.0
      */
     public function set()
     {
@@ -70,6 +71,7 @@ class Filter extends FilterAndSortingFacade
      *
      * @param $sortRequestField
      * @return bool
+     * @since 2.0.0
      */
     public function setAsRelation($sortRequestField)
     {
@@ -115,6 +117,7 @@ class Filter extends FilterAndSortingFacade
      * @param Sort $sortInstance
      * @param Collection $sort
      * @param $query
+     * @since 2.0.0
      */
     private function setSortModelForRelationExpand(Sort $sortInstance, Collection $sort, &$query)
     {
@@ -140,10 +143,9 @@ class Filter extends FilterAndSortingFacade
         }
 
         if ($this->request && $this->request->has($this->filterRequestField)) {
-            $this->filterConditions = $this->filterConditions->merge(
-                $this->mergeConditions($this->request->input($this->filterRequestField))
-            );
+            $this->mergeConditions($this->request->input($this->filterRequestField));
         }
+        dd($this->filterConditions);
     }
 
     /**
@@ -153,25 +155,46 @@ class Filter extends FilterAndSortingFacade
      * @param $requestConditions
      *
      * @return mixed
+     * @since 3.1.0
      */
     public function mergeConditions($requestConditions)
     {
         $conditions = json_decode($requestConditions, true);
+        $filterConditions = $this->filterConditions->toArray();
         if(is_array($conditions)) {
             foreach ($conditions as $key => $row) {
-                //merge operation in conditions.
-                if ($this->filterConditions->has($key) &&
-                    isset($this->filterConditions[ $key ]['operation']) && $this->filterConditions[ $key ]['operation'] == 'in' && is_array($this->filterConditions[ $key ]['value']) &&
-                    isset($row['operation']) && $row['operation'] == 'in' && is_array($row['value'])
-                ) {
-                    $conditions[ $key ]['value'] = array_merge($conditions[ $key ]['value'], $this->filterConditions[ $key ]['value']);
+                $hasKey = isset($filterConditions[$key]);
+                if (!$hasKey) {
+                    $filterConditions[$key] = $row;
+                }elseif($hasKey && isset($filterConditions[$key]['operation']) && isset($filterConditions[$key]['value'])){
+                    $this->mergeOperations($filterConditions, $key, $row);
                 }
             }
-
-            return $conditions;
         }
+        $this->filterConditions = collect($filterConditions);
+    }
 
-        return [];
+    /**
+     * Мержит операции с дополнением параметров.
+     * TODO Если станет много операция для мерджа - использовать switch-case структуру.
+     *
+     * @param $conditions
+     * @param $index
+     * @param $row
+     *
+     * @since 3.1.0
+     */
+    protected function mergeOperations(&$conditions, $index, $row)
+    {
+        if(isset($row['operation']) && isset($row['value'])){
+            if(
+                $row['operation'] == 'in' &&
+                is_array($row['value'])
+            ){
+                $conditions[$index]['value'] = array_merge($this->filterConditions[$index]['value'], $row['value']);
+            }
+
+        }
     }
 
     /**
