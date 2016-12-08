@@ -145,7 +145,6 @@ class Filter extends FilterAndSortingFacade
         if ($this->request && $this->request->has($this->filterRequestField)) {
             $this->mergeConditions($this->request->input($this->filterRequestField));
         }
-        dd($this->filterConditions);
     }
 
     /**
