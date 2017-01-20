@@ -8,7 +8,7 @@
 
 namespace Nemesis\FilterAndSorting\Library;
 
-use Illuminate\Database\Capsule\Manager as DB;
+use Illuminate\Database\Capsule\Manager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -79,8 +79,11 @@ class FilterAndSortingFacade
             $tableName = $model->getTable();
         }
 
-        return array_keys(DB::getDoctrineSchemaManager()
-            ->listTableColumns($tableName));
+        if (env('APP_ENV', 'testing') == 'testing') {
+            return array_keys(Manager::getDoctrineSchemaManager()->listTableColumns($tableName));
+        } else {
+            return array_keys(\DB::getDoctrineSchemaManager()->listTableColumns($tableName));
+        }
     }
 
     /**
