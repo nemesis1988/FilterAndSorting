@@ -220,30 +220,28 @@ trait FilterAndSorting
     public function setSort($query, $request = null)
     {
         if ($request && $request->has('sort')) {
-            $sort = $request->get('sort');
-            $sign = substr($sort, 0, 1);
 
-            if ($sign == '-') {
-                $sort_direction = 'desc';
-                $sort = trim($sort, '-');
-            } else {
-                $sort_direction = 'asc';
-            }
+            $sorts = explode(',', $request->get('sort'));
 
             $available_fields = array_keys(DB::getDoctrineSchemaManager()
                 ->listTableColumns($query->getModel()->getTable()));
 
-            $sort_arguments = explode('.', $sort);
-            $arg_count = count($sort_arguments);
-            if ($arg_count == 2) {
-                if (in_array($sort_arguments[0], $this->extraFields())) {
-                    $query->modelJoin($sort_arguments[0], $sort_arguments[1]);
-                    $table_name = $this->detectTableNameFromRelation($sort_arguments[0]);
-                    $query->orderBy($table_name . '.' . $sort_arguments[1], $sort_direction);
-                }
-            } else {
-                if (in_array($sort_arguments[0], $available_fields)) {
-                    $query->orderBy($sort_arguments[0], $sort_direction);
+            foreach ($sorts as $sort) {
+                $sort_direction = ($sort[0] == '-') ? 'desc':'asc';
+                $sort_field = ltrim($sort, '-');
+
+                $sort_arguments = explode('.', $sort_field);
+
+                if (count($sort_arguments) == 2) {
+                    if (in_array($sort_arguments[0], $this->extraFields())) {
+                        $query->modelJoin($sort_arguments[0], $sort_arguments[1]);
+                        $table_name = $this->detectTableNameFromRelation($sort_arguments[0]);
+                        $query->orderBy($table_name . '.' . $sort_arguments[1], $sort_direction);
+                    }
+                } else {
+                    if (in_array($sort_field, $available_fields)) {
+                        $query->orderBy($sort_field, $sort_direction);
+                    }
                 }
             }
         }
