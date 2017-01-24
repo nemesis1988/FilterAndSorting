@@ -83,7 +83,7 @@ trait FilterAndSorting
      */
     public function setFilter($query, $params, $request = null)
     {
-        $filter = $this->getFilter($params, $request, 'filterExpand');
+        $filter = $this->getFilter($params, $request, 'filter');
 
         if ($filter) {
             foreach ($filter as $key => $value) {
