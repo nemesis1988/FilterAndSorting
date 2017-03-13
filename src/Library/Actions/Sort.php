@@ -3,10 +3,9 @@
 namespace Nemesis\FilterAndSorting\Library\Actions;
 
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
 
 /**
@@ -19,6 +18,7 @@ use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
  */
 class Sort extends FilterAndSortingFacade
 {
+
     /**
      * @var Collection
      */
@@ -40,10 +40,10 @@ class Sort extends FilterAndSortingFacade
      *
      * @since 2.0.0
      */
-    public function __construct(Builder &$query, Request $request = null, $params = [], $sortRequestField = 'sort')
+    public function __construct(Builder &$query, Request $request = null, $params = [ ], $sortRequestField = 'sort')
     {
         parent::__construct($query, $query->getModel(), $request);
-        $this->sortConditions = collect([]);
+        $this->sortConditions = collect([ ]);
         $this->sortRequestField = $sortRequestField;
         $this->get($params);
     }
@@ -62,6 +62,7 @@ class Sort extends FilterAndSortingFacade
                 $this->sortModel($condition);
             }
         });
+
         return $this->query;
     }
 
@@ -69,18 +70,20 @@ class Sort extends FilterAndSortingFacade
      * Устанавливает сортировку по реляциям.
      *
      * @since 2.0.0
+     *
      * @param Collection $sorted
+     *
      * @return Builder
      */
     public function setAsRelation(Collection $sorted)
     {
         $this->sortConditions->each(function ($condition) use ($sorted) {
-            if ($condition->relation && !$sorted->contains('relation', $condition->relation)) {
-                $this->query->with([$condition->relation => function ($q) use ($condition) {
+            if ($condition->relation && ! $sorted->contains('relation', $condition->relation)) {
+                $this->query->with([ $condition->relation => function ($q) use ($condition) {
                     $this->startTransition($q);
                     $this->sortModel($condition);
                     $this->stopTransition();
-                }]);
+                } ]);
             }
         });
 
@@ -91,6 +94,7 @@ class Sort extends FilterAndSortingFacade
      * Сортиировка по полю внутри реляции.
      *
      * @param $condition
+     *
      * @since 2.0.0
      */
     public function sortRelation($condition)
@@ -103,6 +107,7 @@ class Sort extends FilterAndSortingFacade
      * Соритровка по полю внутри модели.
      *
      * @param $condition
+     *
      * @since 2.0.0
      */
     public function sortModel($condition)
@@ -118,7 +123,7 @@ class Sort extends FilterAndSortingFacade
      * @return array
      * @since 2.0.0
      */
-    public function get($params = [])
+    public function get($params = [ ])
     {
         if ($this->request && $this->request->has($this->sortRequestField)) {
             $sortParts = explode(',', $this->request->get($this->sortRequestField));
@@ -127,18 +132,24 @@ class Sort extends FilterAndSortingFacade
             }
         }
 
-        if(isset($params[$this->sortRequestField])) {
-            $sortParts = explode(',', $params[$this->sortRequestField]);
+        if (isset($params[ $this->sortRequestField ])) {
+            $sortParts = explode(',', $params[ $this->sortRequestField ]);
             foreach ($sortParts as $part) {
                 $this->setSortPartConditions($part);
             }
         }
+
+        $this->sortConditions = $this->sortConditions->unique(function ($condition) {
+            return $condition->relation . $condition->table . $condition->field;
+        });
+
     }
 
     /**
      * Устанавливает условия сортировки для одного блока.
      *
      * @param $part
+     *
      * @since 2.0.0
      */
     protected function setSortPartConditions($part)
@@ -152,12 +163,12 @@ class Sort extends FilterAndSortingFacade
 
         list($relation, $table_name, $field_name) = $this->getFieldParametersWithExistsCheck(trim($part, '-'));
 
-        if($table_name && $field_name) {
+        if ($table_name && $field_name) {
             $this->sortConditions->push((object) [
+                'table'     => $table_name,
                 'field'     => $field_name,
                 'direction' => $sort_direction,
                 'relation'  => $relation,
-                'table' => $table_name
             ]);
         }
     }

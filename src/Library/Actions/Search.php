@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
-use Nemesis\FilterAndSorting\Library\FilterOperation;
+use Nemesis\FilterAndSorting\Library\Operations\FilterOperation;
+use Nemesis\FilterAndSorting\Library\Operations\FilterRelationOperation;
 
 /**
  * Class Filter
@@ -53,16 +54,17 @@ class Search extends FilterAndSortingFacade
      */
     public function set()
     {
-        if ( ! empty($this->searchConditions['fields']) && ! empty($this->searchConditions['query'])) {
-            $params = [
-                'operation' => 'search',
-                'value'     => $this->searchConditions['query'],
-            ];
+        if ( ! $this->searchConditions->isEmpty()) {
             //create hard where query
-            $this->query->where(function ($query) use ($params) {
-                foreach (explode('|', $this->searchConditions['fields']) as $field) {
-                    list($relation, $table_name, $field_name) = $this->getFieldParameters($field);
-                    (new FilterOperation($query, $this->getFullFieldLink($table_name, $field_name), $params, $relation))->set();
+            $this->query->where(function ($query) {
+                foreach ($this->searchConditions->groupBy('relation') as $relation => $conditions) {
+                    if ($relation) {
+                        (new FilterRelationOperation($query, $relation, $conditions))->set();
+                    } else {
+                        foreach ($conditions as $condition) {
+                            (new FilterOperation($query, $this->getConditionFullPath($condition), $condition->value))->set();
+                        }
+                    }
                 }
             });
         }
@@ -78,20 +80,35 @@ class Search extends FilterAndSortingFacade
     public function get($params = [ ])
     {
         if ($this->request && $this->request->has($this->searchRequestField)) {
-            $this->searchConditions = collect(json_decode($this->request->input($this->searchRequestField)));
+            $search = json_decode($this->request->input($this->searchRequestField));
+            if ( ! empty($search->fields) && ! empty($search->query)) {
+                foreach (explode('|', $search->fields) as $field) {
+                    list($relation, $table_name, $field_name) = $this->getFieldParametersWithExistsCheck($field);
+                    if ($table_name && $field_name) {
+                        $this->searchConditions->push((object) [
+                            'relation' => $relation,
+                            'table'    => $table_name,
+                            'field'    => $field_name,
+                            'value'    => [
+                                'operation' => 'search',
+                                'value'     => $search->query,
+                            ],
+                        ]);
+                    }
+                }
+            }
         }
     }
 
     /**
      * Возвращает полный линк поля.
      *
-     * @param $table
-     * @param $name
+     * @param $condition
      *
      * @return string
      */
-    private function getFullFieldLink($table, $name)
+    private function getConditionFullPath($condition)
     {
-        return $table . '.' . $name;
+        return $condition->table . '.' . $condition->field;
     }
 }

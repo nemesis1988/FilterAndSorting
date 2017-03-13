@@ -6,8 +6,9 @@
  * Time: 23:38
  */
 
-namespace Nemesis\FilterAndSorting\Library;
+namespace Nemesis\FilterAndSorting\Library\Operations;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class FilterOperation
 {
+
     /**
      * @var Builder
      */
@@ -29,7 +31,6 @@ class FilterOperation
      * @var string
      */
     public $operation = '=';
-    public $operationCorrection = false;
     public $operationType = false;
 
     /**
@@ -40,42 +41,31 @@ class FilterOperation
     public $value = '';
 
     /**
-     * Реляция для операции.
-     *
-     * @var null
-     */
-    private $relation;
-
-    /**
      * Поле для операции.
      *
      * @var string
      */
-    private $field_name;
+    protected $field_name;
 
     /**
      * Доступные операции.
      *
      * @var array
      */
-    private $allowedOperations = ['=', '>', '<', '>=', '<=', '<>', 'not in', 'in', 'like', 'search'];
-    private $allowedDateOperations = ['=', '>', '<', '>=', '<=', '<>'];
+    protected $allowedOperations = [ '=', '>', '<', '>=', '<=', '<>', 'not in', 'in', 'like', 'search' ];
+    protected $allowedDateOperations = [ '=', '>', '<', '>=', '<=', '<>' ];
 
-    /** @var regex Шаблон определения даты для фильтрации */
-    private $datePattern = "/^(\d{2}).(\d{2}).(\d{4})$/";
 
     /**
      * Конструктор класса операций фильтра.
      *
      * @param Builder $query
-     * @param $field_name
-     * @param $condition
-     * @param null $relation
+     * @param         $field_name
+     * @param         $condition
      */
-    public function __construct(Builder &$query, $field_name, $condition, $relation = null)
+    public function __construct(Builder &$query, $field_name, $condition)
     {
         $this->query = $query;
-        $this->relation = $relation;
         $this->field_name = $field_name;
         $this->detectOperation($condition);
     }
@@ -85,45 +75,28 @@ class FilterOperation
      */
     public function set()
     {
-        if ($this->relation) {
-            if ($this->operationCorrection) {
-                $this->query->whereDoesntHave($this->relation, function ($qu) {
-                    $this->addFilterOperation($qu);
-                });
-            } else {
-                if($this->operation == 'search'){
-                    $this->query->orWhereHas($this->relation, function ($qu) {
-                        $this->operation = 'like';
-                        $this->addFilterOperation($qu);
-                    });
-                }else {
-                    $this->query->whereHas($this->relation, function ($qu) {
-                        $this->addFilterOperation($qu);
-                    });
-                }
-            }
-        } else {
-            $this->addFilterOperation($this->query);
-        }
+        $this->addFilterOperation($this->query);
     }
 
     /**
      * Добавление условий к фильтру.
      *
      * @param Builder $query
+     *
      * @return mixed
      * @since 1.0.0
      */
     protected function addFilterOperation(Builder &$query)
     {
         $this->isNullOperation($query);
-        if ($this->operationType == 'operation' && !empty($this->value)) {
+        if ($this->operationType == 'operation' && ! empty($this->value)) {
             $this->filterAllowedOperations($query);
         } elseif ($this->operationType == 'date_range') {
             $this->filterByDateRange($query);
         } elseif (is_string($this->value) || is_numeric($this->value)) {
             $query->where($this->field_name, $this->value);
         }
+
         return $query;
     }
 
@@ -131,9 +104,10 @@ class FilterOperation
      * Фильтрация по разрешенным операциями.
      *
      * @param $query
+     *
      * @since 2.0.0
      */
-    private function filterAllowedOperations(&$query)
+    protected function filterAllowedOperations(&$query)
     {
         switch ($this->operation) {
             case 'in':
@@ -166,9 +140,10 @@ class FilterOperation
      * Фильтрация по датам
      *
      * @param Builder $query
+     *
      * @since 2.0.0
      */
-    private function filterByDateRange(Builder &$query)
+    protected function filterByDateRange(Builder &$query)
     {
         if ($this->value['from']['value']) {
             $query->where($this->field_name, $this->value['from']['operation'], $this->value['from']['value']);
@@ -181,9 +156,10 @@ class FilterOperation
 
     /**
      * @param Builder $query
+     *
      * @since 2.0.0
      */
-    private function isNullOperation(Builder &$query)
+    protected function isNullOperation(Builder &$query)
     {
         if (isset($this->value['isNull']) && $this->value['isNull'] === true) {
             $query->whereNull($this->field_name);
@@ -197,19 +173,18 @@ class FilterOperation
      * Определим условия операции.
      *
      * @param $condition
+     *
      * @since 2.0.0
+     * @return array
      */
-    private function detectOperation($condition)
+    protected function detectOperation($condition)
     {
+        $this->operation = '=';
         if (isset($condition['operation'])) {
             $operation = strtolower($condition['operation']);
             if (in_array($operation, $this->allowedOperations) !== false) {
                 $this->operationType = 'operation';
                 $this->operation = $operation;
-                if ($this->relation && $this->operation == '<>') {
-                    $this->operation = '=';
-                    $this->operationCorrection = true;
-                }
                 if (isset($condition['value'])) {
                     $this->value = $condition['value'];
                 }
@@ -218,34 +193,44 @@ class FilterOperation
             $this->operationType = 'date_range';
             $this->value = [
                 'from' => $this->getDateCondition(isset($condition['from']) ? $condition['from'] : null, '>='),
-                'to' => $this->getDateCondition(isset($condition['to']) ? $condition['to'] : null, '<='),
+                'to'   => $this->getDateCondition(isset($condition['to']) ? $condition['to'] : null, '<=', ' 23:59:59'),
             ];
         } else {
             $this->operationType = 'simple';
             $this->value = $condition;
         }
+
+        return [
+            'operationType' => $this->operationType,
+            'operation'     => $this->operation,
+            'value'         => $this->value,
+        ];
     }
 
     /**
      * Возвращает отформатированное условия для поиска по дате.
      *
-     * @param $dateCondition
+     * @param        $dateCondition
      * @param string $defaultOperation
+     *
+     * @param string $time
+     *
      * @return array
      * @since 2.0.0
      */
-    private function getDateCondition($dateCondition, $defaultOperation = '<=')
+    protected function getDateCondition($dateCondition, $defaultOperation = '<=', $time = ' 00:00:00')
     {
         if (is_array($dateCondition)) {
             $operation = isset($dateCondition['operation']) ? $dateCondition['operation'] : $defaultOperation;
+
             return [
-                'value' => $this->getDateValue(isset($dateCondition['value']) ? $dateCondition['value'] : null),
-                'operation' => $this->checkDateOperation($operation) ? $operation : $defaultOperation
+                'value'     => $this->getDateValue(isset($dateCondition['value']) ? $dateCondition['value'] : null, $time),
+                'operation' => $this->checkDateOperation($operation) ? $operation : $defaultOperation,
             ];
         } else {
             return [
-                'value' => $this->getDateValue($dateCondition),
-                'operation' => $defaultOperation
+                'value'     => $this->getDateValue($dateCondition, $time),
+                'operation' => $defaultOperation,
             ];
         }
     }
@@ -254,9 +239,10 @@ class FilterOperation
      * Проверяет операцию для даты на существование.
      *
      * @param $operation
+     *
      * @return bool
      */
-    private function checkDateOperation($operation)
+    protected function checkDateOperation($operation)
     {
         return in_array($operation, $this->allowedDateOperations);
     }
@@ -265,12 +251,37 @@ class FilterOperation
      * Возвращает дату в удобном формате.
      *
      * @param $date
+     * @param $time
+     *
      * @return string
      * @since 2.0.0
      */
-    private function getDateValue($date)
+    protected function getDateValue($date, $time = false)
     {
-        return preg_match($this->datePattern, $date) ? (new \DateTime($date))->format("Y-m-d") : $date;
+        try {
+            $date = Carbon::parse($date);
+            if ($time) {
+                $date->setTimeFromTimeString($time);
+
+                return $date->toDateTimeString();
+            }
+
+            return $this->checkIfTimeNeeded($date) ? $date->toDateTimeString() : $date->toDateString();
+        } catch (\Exception $e) {
+            return $date;
+        }
+    }
+
+    /**
+     * Determine if date need time expression.
+     *
+     * @param $date
+     *
+     * @return int
+     */
+    protected function checkIfTimeNeeded($date)
+    {
+        return preg_match('/\s(\d{2}):(\d{2})(:\d{2})?$/', $date);
     }
 
 }

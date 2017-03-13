@@ -48,4 +48,54 @@ class FilterExpandTest extends TestCase
             $user->viewed->count()
         );
     }
+
+    /** @test **/
+    function it_filter_expand_on_multiple_conditions()
+    {
+        $request = $this->setRequest([
+            'filterExpand' => '{"posts.created_at":{"operation":">=","value":"2017-01-10"}, "posts.created_at":{"operation":"<=","value":"2017-01-15"}}',
+            'expand' => 'posts',
+            'sortExpand' => '-posts.id'
+        ]);
+
+        $users = User::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(1, $users[0]->posts->count());
+        $this->assertEquals(0, $users[2]->posts->count());
+
+        $request = $this->setRequest([
+            'filterExpand' => '{"posts.created_at":{"from":"2017-01-10","to":"2017-01-15"}}',
+            'expand' => 'posts',
+            'sortExpand' => '-posts.id'
+        ]);
+
+        $users = User::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(2, $users[0]->posts->count());
+        $this->assertEquals(2, $users[0]->posts[0]->id);
+        $this->assertEquals(0, $users[2]->posts->count());
+
+        $request = $this->setRequest([
+            'filterExpand' => '{"posts.created_at":{"operation":">=","value":"2017-01-10"}, "posts.created_at":{"operation":"<=","value":"2017-01-30"}}',
+            'expand' => 'posts',
+            'sortExpand' => '-posts.id'
+        ]);
+
+        $users = User::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(2, $users[0]->posts->count());
+        $this->assertEquals(0, $users[2]->posts->count());
+
+        $request = $this->setRequest([
+            'filterExpand' => '{"posts.created_at":{"operation":">=","value":"2017-01-10"}, "posts.created_at":{"operation":"<=","value":"2017-01-30 23:59"}}',
+            'expand' => 'posts',
+            'sortExpand' => '-posts.id'
+        ]);
+
+        $users = User::setFilterAndRelationsAndSort($request)->get();
+
+        $this->assertEquals(2, $users[0]->posts->count());
+        $this->assertEquals(1, $users[2]->posts->count());
+
+    }
 }
