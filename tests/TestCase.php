@@ -68,7 +68,7 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
     {
         DB::table('users')->insert([
            [
-               'full_name' => 'Ivan Test'
+               'full_name' => 'Ivan Test',
            ],
            [
                'full_name' => 'Jefrey Test'
@@ -81,15 +81,18 @@ abstract class TestCase extends PHPUnit_Framework_TestCase
         DB::table('posts')->insert([
             [
                 'user_id' => 1,
-                'title' => 'First post'
+                'title' => 'First post',
+                'created_at' => \Carbon\Carbon::createFromDate(2017,1,10)
             ],
             [
                 'user_id' => 1,
-                'title' => 'Second post'
+                'title' => 'Second post',
+                'created_at' => \Carbon\Carbon::createFromDate(2017,1,15)
             ],
             [
                 'user_id' => 3,
-                'title' => 'Third post'
+                'title' => 'Third post',
+                'created_at' => \Carbon\Carbon::createFromDate(2017,1,30)
             ],
         ]);
 

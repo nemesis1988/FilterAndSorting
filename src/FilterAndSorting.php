@@ -59,7 +59,7 @@ trait FilterAndSorting
         (new Expand($query, $request, $params, 'expand'))->set();
         (new Filter($query, $request, $params, 'filter'))->set();
         (new Sort($query, $request, $params, 'sort'))->set();
-        $sorted = (new Filter($query, $request, $params, 'filterExpand'))->setAsRelation('sortExpand');
+        $sorted = (new Filter($query, $request, $params, 'filterExpand'))->setAsRelation('sortExpand', $params);
         (new Sort($query, $request, $params, 'sortExpand'))->setAsRelation($sorted);
         (new Search($query, $request, $params, 'search'))->set();
 

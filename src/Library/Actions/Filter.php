@@ -8,11 +8,12 @@
 
 namespace Nemesis\FilterAndSorting\Library\Actions;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Builder;
-use Nemesis\FilterAndSorting\Library\FilterOperation;
 use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
+use Nemesis\FilterAndSorting\Library\Operations\FilterOperation;
+use Nemesis\FilterAndSorting\Library\Operations\FilterRelationOperation;
 
 /**
  * Class Filter
@@ -24,6 +25,7 @@ use Nemesis\FilterAndSorting\Library\FilterAndSortingFacade;
  */
 class Filter extends FilterAndSortingFacade
 {
+
     /**
      * Условия фильтрации.
      *
@@ -43,13 +45,13 @@ class Filter extends FilterAndSortingFacade
      *
      * @param Builder $query
      * @param Request $request
-     * @param array $params
-     * @param string $filterRequestField
+     * @param array   $params
+     * @param string  $filterRequestField
      */
-    public function __construct(Builder &$query, Request $request = null, $params = [], $filterRequestField = 'filter')
+    public function __construct(Builder &$query, Request $request = null, $params = [ ], $filterRequestField = 'filter')
     {
         parent::__construct($query, $query->getModel(), $request);
-        $this->filterConditions = collect([]);
+        $this->filterConditions = collect([ ]);
         $this->filterRequestField = $filterRequestField;
         $this->get($params);
     }
@@ -60,63 +62,93 @@ class Filter extends FilterAndSortingFacade
      */
     public function set()
     {
-        $this->filterConditions->each(function ($value, $key) {
-            list($relation, $table_name, $field_name) = $this->getFieldParameters($key);
-            (new FilterOperation($this->query, $this->getFullFieldLink($table_name, $field_name), $value, $relation))->set();
+        $this->filterConditions->groupBy('relation')->each(function ($conditions, $relation) {
+            if ($relation) {
+                (new FilterRelationOperation(
+                    $this->query, $relation, $conditions
+                ))->set();
+            } else {
+                //filtration in current table. $relation = null.
+                $this->filterByConditions($conditions);
+            }
         });
     }
 
     /**
      * Устанавливаем параметры фильтрации как для реляции.
      *
-     * @param $sortRequestField
-     * @return bool
+     * @param       $sortRequestField
+     * @param array $params
+     *
+     * @return Collection
      * @since 2.0.0
      */
-    public function setAsRelation($sortRequestField)
+    public function setAsRelation($sortRequestField, $params = [ ])
     {
-        $sorted = collect([]);
-        $sortInstance = new Sort($this->query, $this->request, $sortRequestField);
-        $this->filterConditions->each(function ($value, $key) use (&$sorted, $sortInstance) {
-            list($relation, $table_name, $field_name) = $this->getFieldParameters($key);
+        $sorted = collect([ ]);
+        $sortInstance = new Sort($this->query, $this->request, $params, $sortRequestField);
+        foreach ($this->filterConditions->groupBy('relation') as $relation => $conditions) {
             if ($relation) {
                 $sort = $this->checkSortRelation($sortInstance, $relation);
                 if ($sort) {
                     $sorted = $sorted->merge($sort);
                 }
-                $this->filterByRelation($sortInstance, $sort, $relation, $field_name, $table_name, $value);
+                $this->filterByRelation($relation, $conditions, $sortInstance, $sort);
             }
-        });
+        }
+
         return $sorted;
+    }
+
+    /**
+     * Filter current table by conditions.
+     *
+     * @since 3.2.0
+     *
+     * @param Collection $conditions
+     */
+    protected function filterByConditions(Collection $conditions)
+    {
+        foreach ($conditions as $condition) {
+            (new FilterOperation(
+                $this->query, $this->getConditionFullPath($condition),
+                $condition->value
+            ))->set();
+        }
     }
 
     /**
      * Фильтруем по реляциии.
      *
-     * @param Sort $sortInstance
-     * @param $sort
-     * @param $relation
-     * @param $field_name
-     * @param $table_name
-     * @param $value
+     * @param       $relation
+     * @param array $conditions
+     * @param Sort  $sortInstance
+     * @param       $sort
      */
-    private function filterByRelation(Sort $sortInstance, $sort, $relation, $field_name, $table_name, $value)
+    protected function filterByRelation($relation, $conditions, Sort $sortInstance = null, $sort = null)
     {
-        $this->query->with([$relation => function ($query) use ($value, $field_name, $table_name, $relation, $sortInstance, $sort) {
+        $this->query->with([ $relation => function ($query) use ($conditions, $sortInstance, $sort) {
             $queryBuilder = $query->getQuery();
-            (new FilterOperation($queryBuilder, $this->getFullFieldLink($table_name, $field_name), $value))->set();
+            foreach ($conditions as $condition) {
+                (new FilterOperation(
+                    $queryBuilder,
+                    $this->getConditionFullPath($condition),
+                    $condition->value
+                ))->set();
+            }
             if ($sort) {
                 $this->setSortModelForRelationExpand($sortInstance, $sort, $query);
             }
-        }]);
+        } ]);
     }
 
     /**
      * Установим сортировку для expand модели.
      *
-     * @param Sort $sortInstance
+     * @param Sort       $sortInstance
      * @param Collection $sort
-     * @param $query
+     * @param            $query
+     *
      * @since 2.0.0
      */
     private function setSortModelForRelationExpand(Sort $sortInstance, Collection $sort, &$query)
@@ -138,13 +170,16 @@ class Filter extends FilterAndSortingFacade
      */
     public function get($params)
     {
+        $conditions = [ ];
         if (isset($params[ $this->filterRequestField ]) && is_array($params[ $this->filterRequestField ])) {
-            $this->filterConditions = collect($params[ $this->filterRequestField ]);
+            $conditions = $params[ $this->filterRequestField ];
         }
 
         if ($this->request && $this->request->has($this->filterRequestField)) {
-            $this->mergeConditions($this->request->input($this->filterRequestField));
+            $conditions = $this->mergeConditions($this->request->input($this->filterRequestField), $conditions);
         }
+
+        $this->prepareConditions(collect($conditions));
     }
 
     /**
@@ -152,25 +187,27 @@ class Filter extends FilterAndSortingFacade
      * Только данные "whereIn" операций не затираются.
      *
      * @param $requestConditions
+     * @param $params
      *
      * @return mixed
      * @since 3.1.0
      */
-    public function mergeConditions($requestConditions)
+    public function mergeConditions($requestConditions, $params)
     {
         $conditions = json_decode($requestConditions, true);
-        $filterConditions = $this->filterConditions->toArray();
-        if(is_array($conditions)) {
+        $filterConditions = $params;
+        if (is_array($conditions)) {
             foreach ($conditions as $key => $row) {
-                $hasKey = isset($filterConditions[$key]);
-                if (!$hasKey) {
-                    $filterConditions[$key] = $row;
-                }elseif($hasKey && isset($filterConditions[$key]['operation']) && isset($filterConditions[$key]['value'])){
+                $hasKey = isset($filterConditions[ $key ]);
+                if ( ! $hasKey) {
+                    $filterConditions[ $key ] = $row;
+                } elseif ($hasKey && isset($filterConditions[ $key ]['operation']) && isset($filterConditions[ $key ]['value'])) {
                     $this->mergeOperations($filterConditions, $key, $row);
                 }
             }
         }
-        $this->filterConditions = collect($filterConditions);
+
+        return collect($filterConditions);
     }
 
     /**
@@ -185,14 +222,13 @@ class Filter extends FilterAndSortingFacade
      */
     protected function mergeOperations(&$conditions, $index, $row)
     {
-        if(isset($row['operation']) && isset($row['value'])){
-            if(
+        if (isset($row['operation']) && isset($row['value'])) {
+            if (
                 $row['operation'] == 'in' &&
                 is_array($row['value'])
-            ){
-                $conditions[$index]['value'] = array_merge($this->filterConditions[$index]['value'], $row['value']);
+            ) {
+                $conditions[ $index ]['value'] = array_merge($this->filterConditions[ $index ]['value'], $row['value']);
             }
-
         }
     }
 
@@ -200,26 +236,51 @@ class Filter extends FilterAndSortingFacade
      * Проверяет реляцию на совпадение и существование соритровки для нее.
      *
      * @param Sort $sort
-     * @param $relation
-     * @return bool
+     * @param      $relation
+     *
+     * @return bool|Collection
      */
-    private function checkSortRelation(Sort $sort, $relation)
+    protected function checkSortRelation(Sort $sort, $relation)
     {
         if ($sort->sortConditions->contains('relation', $relation)) {
             return $sort->sortConditions->where('relation', $relation);
         }
-        return false;
+
+        return null;
     }
 
     /**
-     * Возвращает полный линк поля.
+     * Возвращает полную ссылку на поле сортировки.
      *
-     * @param $table
-     * @param $name
+     * @param $condition
+     *
      * @return string
+     * @since 2.1.0
      */
-    private function getFullFieldLink($table, $name)
+    protected function getConditionFullPath($condition)
     {
-        return $table . '.' . $name;
+        return $condition->table . '.' . $condition->field;
+    }
+
+    /**
+     * Prepare filter conditions to work on.
+     *
+     * @since 3.2.0
+     *
+     * @param Collection $conditions
+     */
+    protected function prepareConditions(Collection $conditions)
+    {
+        foreach ($conditions as $key => $condition) {
+            list($relation, $table_name, $field_name) = $this->getFieldParametersWithExistsCheck($key);
+            if ($table_name && $field_name) {
+                $this->filterConditions->push((object) [
+                    'relation' => $relation,
+                    'table'    => $table_name,
+                    'field'    => $field_name,
+                    'value'    => $condition,
+                ]);
+            }
+        }
     }
 }

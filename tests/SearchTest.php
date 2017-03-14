@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Database\MySqlConnection;
+
 class SearchTest extends TestCase
 {
     /** @test * */
