@@ -106,6 +106,7 @@ class Search extends FilterAndSortingFacade
      * @param $condition
      *
      * @return string
+     * @since 3.1.8
      */
     private function getConditionFullPath($condition)
     {
