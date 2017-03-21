@@ -1,10 +1,13 @@
 ## Filter And Sorting Trait
+Фильтр для postgresql
+
+```
+  Замечание: Есть известный баг с агрегацией при сортировке вложенных моделей. Что бы избежать этой проблемы, надо делать $query->get()->unique($model->getKeyName())
+  Баг будет исправлен в следующих версиях
+```
+
 Для установки наберите в командной строке код:
 
-Для Laravel >=5.1.1:
-```bash
-composer require nemesis/laravel-filter-and-sorting ^2.0
-```
 Для Laravel >=5.3:
 ```bash
 composer require nemesis/laravel-filter-and-sorting ^3.0
@@ -12,11 +15,6 @@ composer require nemesis/laravel-filter-and-sorting ^3.0
 
 или добавьте в **composer.json** запись в раздел **require**:
 
-Для Laravel >=5.1.1:
-```json
-"nemesis/laravel-filter-and-sorting": "^2.0"
-```
-Для Laravel >=5.3
 ```json
 "nemesis/laravel-filter-and-sorting": "^3.0"
 ```

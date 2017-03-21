@@ -31,14 +31,6 @@ trait FilterAndSorting
     }
 
     /**
-     * Boot at first.
-     */
-    public static function bootFilterAndSorting()
-    {
-        \DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
-    }
-
-    /**
      * Установка фильтра, сортировки и подключение вложенных моделей
      *
      * @param Builder $query
@@ -82,7 +74,7 @@ trait FilterAndSorting
             $query->select($this->getTable() . ".*");
         }
 
-        $query->addSelect(new Expression("`$table`.`$sortColumn`"));
+        $query->addSelect(new Expression("$table.$sortColumn"));
 
         return $query->join($table, $one, $operator, $two, $type, $where);
     }

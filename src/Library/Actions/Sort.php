@@ -105,9 +105,7 @@ class Sort extends FilterAndSortingFacade
      */
     public function sortModel($condition)
     {
-        if (in_array($condition->field, $this->getModelAvailableFields($this->model))) {
-            $this->query->orderBy($condition->field, $condition->direction);
-        }
+        $this->query->orderBy($condition->field, $condition->direction);
     }
 
     /**
