@@ -27,9 +27,9 @@ trait FilterAndSorting
      * @return array
      * @since 1.0.0
      */
-    protected function extraFields()
+    public function extraFields()
     {
-        return [ ];
+        return [];
     }
 
     /**
