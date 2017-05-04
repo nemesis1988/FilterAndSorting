@@ -109,8 +109,6 @@ class FilterOperation
      */
     protected function addFilterOperation(Builder &$query)
     {
-        dump($this->value);
-        dump($this->checkSettingForSearchOnValue($this->value));
         $this->isNullOperation($query);
         if ($this->operationType == 'operation' && $this->checkSettingForSearchOnValue($this->value)) {
             $this->filterAllowedOperations($query);
