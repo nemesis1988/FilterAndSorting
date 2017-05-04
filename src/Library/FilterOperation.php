@@ -109,14 +109,17 @@ class FilterOperation
      */
     protected function addFilterOperation(Builder &$query)
     {
+        dump($this->value);
+        dump($this->checkSettingForSearchOnValue($this->value));
         $this->isNullOperation($query);
-        if ($this->operationType == 'operation' && !empty($this->value)) {
+        if ($this->operationType == 'operation' && $this->checkSettingForSearchOnValue($this->value)) {
             $this->filterAllowedOperations($query);
         } elseif ($this->operationType == 'date_range') {
             $this->filterByDateRange($query);
         } elseif (is_string($this->value)) {
             $query->where($this->field_name, $this->value);
         }
+
         return $query;
     }
 
@@ -258,6 +261,21 @@ class FilterOperation
     private function getDateValue($date)
     {
         return preg_match($this->datePattern, $date) ? (new \DateTime($date))->format("Y-m-d") : $date;
+    }
+
+    /**
+     * Проверка настроек на возможность искать по пустым строкам
+     *
+     * @param $value
+     * @return bool
+     */
+    private function checkSettingForSearchOnValue($value)
+    {
+        if (!$value) {
+            return (config('filter-and-sorting.search_by_operation_empty_value'));
+        }
+
+        return true;
     }
 
 }

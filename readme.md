@@ -19,6 +19,28 @@ composer require nemesis/laravel-filter-and-sorting ^3.0
 "nemesis/laravel-filter-and-sorting": "^3.0"
 ```
 
+В app.php в блок providers добавьте сервис провайдер фильтра:
+
+```
+'providers' => [
+    ...,
+    Nemesis\FilterAndSorting\FilterAndSortingServiceProvider::class,
+    ...,
+```
+
+Если вам нужно менять стандартные настройки фильтра - опубликуйте конфигурацию
+
+```
+php artisan vendor:publish
+```
+
+## Доступные настройки
+
+search_by_operation_empty_value - если установлено в true, позволяет искать с операцией (operation) по пустым строкам. 
+
+Например:
+``` filter={"description":{"operation":"=", "value":""}}``` 
+
 ## Подключение
 
 Подключите **FilterAndSorting** трейт к модели. Если вы хотите получать вложенные модели, нужно объявить метод **extraFields()**, который будет возвращать список реляций, которые можно получить во вложениях. Как это использовать, будет описано ниже
