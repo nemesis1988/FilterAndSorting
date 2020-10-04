@@ -2,7 +2,7 @@
     "name": "nemesis/laravel-filter-and-sorting",
     "description": "Filter And Sorting trait",
     "type": "library",
-    "version": "3.1.10",
+    "version": "3.2.0",
     "minimum-stability": "dev",
     "authors": [
         {
@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "laravel/framework": "^5.3.0",
+        "laravel/framework": ">=5.3.0",
         "doctrine/dbal": "^2.5"
     },
     "autoload": {
